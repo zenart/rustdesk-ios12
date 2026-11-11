@@ -9,6 +9,8 @@ env:
   FLUTTER_RUST_BRIDGE_VERSION: "1.80.1"
   VCPKG_COMMIT_ID: "1de2026f28ead93ff1773e6e680387643e914ea1"
   VCPKG_BINARY_SOURCES: "clear"
+  CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+  CARGO_NET_RETRY: "10"
 jobs:
   build:
     runs-on: macos-15
