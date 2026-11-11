@@ -20,7 +20,7 @@ jobs:
       - name: Select Xcode
         run: |
           ls /Applications | grep -i xcode
-          for v in 16.0 16.1 16.2 16.3 16.4; do [ -d /Applications/Xcode_$v.app ] && { sudo xcode-select -s /Applications/Xcode_$v.app; break; }; done
+          for v in 16.4 16.3 16.2 16.1 16.0; do [ -d /Applications/Xcode_$v.app ] && { sudo xcode-select -s /Applications/Xcode_$v.app; break; }; done
           xcodebuild -version
       - name: Install tools
         run: |
