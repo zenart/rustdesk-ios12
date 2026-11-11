@@ -9,7 +9,6 @@ env:
   FLUTTER_RUST_BRIDGE_VERSION: "1.80.1"
   VCPKG_COMMIT_ID: "1de2026f28ead93ff1773e6e680387643e914ea1"
   VCPKG_BINARY_SOURCES: "clear"
-  IPHONEOS_DEPLOYMENT_TARGET: "12.0"
 jobs:
   build:
     runs-on: macos-15
@@ -67,6 +66,8 @@ jobs:
           (cd flutter && flutter pub get)
           ~/.cargo/bin/flutter_rust_bridge_codegen --rust-input ./src/flutter_ffi.rs --dart-output ./flutter/lib/generated_bridge.dart --c-output ./flutter/ios/Runner/bridge_generated.h
       - name: Build rustdesk lib
+        env:
+          IPHONEOS_DEPLOYMENT_TARGET: "12.0"
         run: cargo build --features flutter,hwcodec --release --target aarch64-apple-ios --lib
       - name: Build app
         run: |
