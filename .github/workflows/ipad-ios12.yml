@@ -87,7 +87,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: flutter/ios/libtailscale_ios.a
-          key: libtailscale-ios-${{ env.LIBTAILSCALE_COMMIT }}
+          key: libtailscale-ios-${{ env.LIBTAILSCALE_COMMIT }}-go1.27.4-a7patch1
       - name: Checkout libtailscale
         if: steps.tscache.outputs.cache-hit != 'true'
         run: |
@@ -96,14 +96,16 @@ jobs:
       - uses: actions/setup-go@v5
         if: steps.tscache.outputs.cache-hit != 'true'
         with:
-          go-version: stable
+          go-version: '1.27.4'
           cache: false
       - name: Build libtailscale for iOS
         if: steps.tscache.outputs.cache-hit != 'true'
         run: |
           cd ~/libtailscale
-          export GOTOOLCHAIN=auto
+          export GOTOOLCHAIN=local
           go version
+          # Go 1.27 pouziva v runtime instrukci, kterou cip A7 (iPad mini 2) nepovoluje
+          python3 $GITHUB_WORKSPACE/flutter/ios/patch_go_procyield.py "$(go env GOROOT)"
           make c-archive-ios
           ls -lh libtailscale_ios.a
           cp libtailscale_ios.a $GITHUB_WORKSPACE/flutter/ios/libtailscale_ios.a
@@ -121,6 +123,7 @@ jobs:
             [ -f "$b" ] && file "$b" | grep -q Mach-O && echo "$b: $(otool -l "$b" | grep -A4 -E 'LC_BUILD_VERSION|LC_VERSION_MIN_IPHONEOS' | grep -E 'minos|version ' | head -1)"
           done
           if nm -m $APP/Runner | grep -E "undefined.*(kSecUseDataProtectionKeychain|SecTrustCopyCertificateChain)"; then echo "symbol stale chybi"; exit 1; fi
+          if otool -tv $APP/Runner | grep -q "CNTVCT_EL0"; then echo "binarka stale cte CNTVCT_EL0 (spadne na A7)"; exit 1; fi
           mkdir Payload && cp -R $APP Payload/
           zip -qry rustdesk-ios12.ipa Payload
           ls -lh rustdesk-ios12.ipa
