@@ -93,6 +93,11 @@ jobs:
         run: |
           git clone https://github.com/tailscale/libtailscale ~/libtailscale
           git -C ~/libtailscale checkout $LIBTAILSCALE_COMMIT
+      - uses: actions/setup-go@v5
+        if: steps.tscache.outputs.cache-hit != 'true'
+        with:
+          go-version: stable
+          cache: false
       - name: Build libtailscale for iOS
         if: steps.tscache.outputs.cache-hit != 'true'
         run: |
