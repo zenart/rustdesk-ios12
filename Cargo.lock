@@ -5315,7 +5315,7 @@ dependencies = [
 [[package]]
 name = "reqwest"
 version = "0.11.23"
-source = "git+https://github.com/rustdesk-org/reqwest?rev=9cb758c9fb2f4edc62eb790acfd45a6a3da21ed3#9cb758c9fb2f4edc62eb790acfd45a6a3da21ed3"
+source = "git+https://github.com/zenart/rustdesk-ios12?rev=9cb758c9fb2f4edc62eb790acfd45a6a3da21ed3#9cb758c9fb2f4edc62eb790acfd45a6a3da21ed3"
 dependencies = [
  "async-compression",
  "base64 0.21.7",
