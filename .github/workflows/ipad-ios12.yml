@@ -11,6 +11,7 @@ env:
   VCPKG_BINARY_SOURCES: "clear"
   CARGO_NET_GIT_FETCH_WITH_CLI: "true"
   CARGO_NET_RETRY: "10"
+  LIBTAILSCALE_COMMIT: "dacde75057ff350e146505829beff446e6823966"
 jobs:
   build:
     runs-on: macos-15
@@ -81,6 +82,26 @@ jobs:
         env:
           IPHONEOS_DEPLOYMENT_TARGET: "12.0"
         run: cargo build --features flutter,hwcodec --release --target aarch64-apple-ios --lib
+      - name: Cache libtailscale
+        id: tscache
+        uses: actions/cache@v4
+        with:
+          path: flutter/ios/libtailscale_ios.a
+          key: libtailscale-ios-${{ env.LIBTAILSCALE_COMMIT }}
+      - name: Checkout libtailscale
+        if: steps.tscache.outputs.cache-hit != 'true'
+        run: |
+          git clone https://github.com/tailscale/libtailscale ~/libtailscale
+          git -C ~/libtailscale checkout $LIBTAILSCALE_COMMIT
+      - name: Build libtailscale for iOS
+        if: steps.tscache.outputs.cache-hit != 'true'
+        run: |
+          cd ~/libtailscale
+          export GOTOOLCHAIN=auto
+          go version
+          make c-archive-ios
+          ls -lh libtailscale_ios.a
+          cp libtailscale_ios.a $GITHUB_WORKSPACE/flutter/ios/libtailscale_ios.a
       - name: Build app
         run: |
           cd flutter

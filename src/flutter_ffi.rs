@@ -65,7 +65,9 @@ fn initialize(app_dir: &str, custom_client_config: &str) {
     #[cfg(target_os = "ios")]
     {
         use hbb_common::env_logger::*;
-        init_from_env(Env::default().filter_or(DEFAULT_FILTER_ENV, "debug"));
+        // stderr se presmeruje do souboru, proto musi byt pred spustenim logovani
+        crate::ios_tailscale::start(app_dir);
+        init_from_env(Env::default().filter_or(DEFAULT_FILTER_ENV, "info"));
     }
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     {

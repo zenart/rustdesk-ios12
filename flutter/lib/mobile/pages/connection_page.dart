@@ -95,6 +95,7 @@ class _ConnectionPageState extends State<ConnectionPage> {
         SliverList(
             delegate: SliverChildListDelegate([
           if (!bind.isCustomClient()) _buildUpdateUI(),
+          if (isIOS) const TailscaleStatus(),
           _buildRemoteIDTextField(),
         ])),
         SliverFillRemaining(
@@ -378,5 +379,63 @@ class _ConnectionPageState extends State<ConnectionPage> {
           kCheckSoftwareUpdateFinish, kCheckSoftwareUpdateFinish);
     }
     super.dispose();
+  }
+}
+
+
+/// Stav Tailscale zabudovaneho v aplikaci (jen iOS). Hodnotu nastavuje Rust
+/// (src/ios_tailscale.rs) do mistni volby `ts-status`.
+class TailscaleStatus extends StatefulWidget {
+  const TailscaleStatus({Key? key}) : super(key: key);
+
+  @override
+  State<TailscaleStatus> createState() => _TailscaleStatusState();
+}
+
+class _TailscaleStatusState extends State<TailscaleStatus> {
+  Timer? _timer;
+  String _status = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+    _timer = Timer.periodic(const Duration(seconds: 2), (_) => _refresh());
+  }
+
+  void _refresh() {
+    final s = bind.mainGetLocalOption(key: 'ts-status');
+    if (s != _status && mounted) {
+      setState(() => _status = s);
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_status.isEmpty) return const SizedBox.shrink();
+    final ok = _status.contains('pripojeno');
+    final match = RegExp(r'https://\S+').firstMatch(_status);
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: ok ? Colors.green.withOpacity(0.15) : Colors.orange.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: InkWell(
+        onTap: match == null
+            ? null
+            : () => launchUrl(Uri.parse(match.group(0)!),
+                mode: LaunchMode.externalApplication),
+        child: SelectableText(_status, style: const TextStyle(fontSize: 15)),
+      ),
+    );
   }
 }
