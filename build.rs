@@ -80,6 +80,22 @@ fn install_android_deps() {
 fn main() {
     hbb_common::gen_version();
     install_android_deps();
+    // iOS: symboly libtailscale se doplni az pri konecnem linkovani v Xcode
+    // (liblibrustdesk.a + libtailscale_ios.a). Vedlejsi cdylib je proto musi
+    // smet nechat nevyresene, jinak by sestaveni knihovny spadlo.
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("ios") {
+        for sym in [
+            "tailscale_new",
+            "tailscale_set_dir",
+            "tailscale_set_hostname",
+            "tailscale_up",
+            "tailscale_loopback",
+            "tailscale_getips",
+            "tailscale_errmsg",
+        ] {
+            println!("cargo:rustc-cdylib-link-arg=-Wl,-U,_{}", sym);
+        }
+    }
     #[cfg(all(windows, feature = "inline"))]
     build_manifest();
     #[cfg(windows)]
