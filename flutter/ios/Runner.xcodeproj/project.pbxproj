@@ -382,6 +382,7 @@
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/liblibrustdesk.a",
+					"$(PROJECT_DIR)/ios12_compat.o",
 					"-ObjC",
 					"-l\"c++\"",
 					"-l\"sqlite3\"",
@@ -578,6 +579,7 @@
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/liblibrustdesk.a",
+					"$(PROJECT_DIR)/ios12_compat.o",
 					"-ObjC",
 					"-l\"c++\"",
 					"-l\"sqlite3\"",
@@ -666,6 +668,7 @@
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/../../target/aarch64-apple-ios/release/liblibrustdesk.a",
+					"$(PROJECT_DIR)/ios12_compat.o",
 					"-ObjC",
 					"-l\"c++\"",
 					"-l\"sqlite3\"",

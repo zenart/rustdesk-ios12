@@ -84,6 +84,7 @@ jobs:
       - name: Build app
         run: |
           cd flutter
+          xcrun --sdk iphoneos clang -arch arm64 -miphoneos-version-min=12.0 -c ios/ios12_compat.c -o ios/ios12_compat.o
           flutter build ios --release --no-codesign
       - name: Package IPA
         run: |
@@ -93,6 +94,7 @@ jobs:
           for b in $APP/Runner $APP/Frameworks/*.framework/*; do
             [ -f "$b" ] && file "$b" | grep -q Mach-O && echo "$b: $(otool -l "$b" | grep -A4 -E 'LC_BUILD_VERSION|LC_VERSION_MIN_IPHONEOS' | grep -E 'minos|version ' | head -1)"
           done
+          if nm -m $APP/Runner | grep -E "undefined.*kSecUseDataProtectionKeychain"; then echo "symbol stale chybi"; exit 1; fi
           mkdir Payload && cp -R $APP Payload/
           zip -qry rustdesk-ios12.ipa Payload
           ls -lh rustdesk-ios12.ipa
