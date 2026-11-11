@@ -1,0 +1,83 @@
+name: iPad iOS12 build
+on:
+  push:
+    branches: [ipad-ios12]
+  workflow_dispatch:
+env:
+  RUST_VERSION: "1.75"
+  FLUTTER_VERSION: "3.19.6"
+  FLUTTER_RUST_BRIDGE_VERSION: "1.80.1"
+  VCPKG_COMMIT_ID: "1de2026f28ead93ff1773e6e680387643e914ea1"
+  VCPKG_BINARY_SOURCES: "clear"
+  IPHONEOS_DEPLOYMENT_TARGET: "12.0"
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        run: |
+          ls /Applications | grep -i xcode
+          sudo xcode-select -s /Applications/Xcode_15.4.app || true
+          xcodebuild -version
+      - name: Install tools
+        run: brew install nasm yasm
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/vcpkg
+          key: vcpkg-ios12-${{ env.VCPKG_COMMIT_ID }}-${{ hashFiles('vcpkg.json', 'res/vcpkg/**', 'res/vcpkg-triplets/**') }}
+      - name: Build vcpkg dependencies
+        run: |
+          if [ ! -x ~/vcpkg/vcpkg ]; then
+            git clone https://github.com/microsoft/vcpkg ~/vcpkg
+            git -C ~/vcpkg checkout $VCPKG_COMMIT_ID
+            ~/vcpkg/bootstrap-vcpkg.sh -disableMetrics
+          fi
+          echo "VCPKG_ROOT=$HOME/vcpkg" >> $GITHUB_ENV
+          if ! ~/vcpkg/vcpkg install --triplet arm64-ios --overlay-triplets=res/vcpkg-triplets --x-install-root="$HOME/vcpkg/installed"; then
+            find ~/vcpkg/buildtrees -name "*.log" -newer vcpkg.json | while read -r f; do echo "== $f"; tail -60 "$f"; done
+            exit 1
+          fi
+          rm -rf ~/vcpkg/buildtrees ~/vcpkg/downloads ~/vcpkg/packages
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          targets: aarch64-apple-ios
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: ipad-ios12
+      - name: Generate flutter rust bridge
+        run: |
+          rustup toolchain install stable --profile minimal
+          cargo +stable install flutter_rust_bridge_codegen --version $FLUTTER_RUST_BRIDGE_VERSION --features "uuid" --locked
+          (cd flutter && flutter pub get)
+          ~/.cargo/bin/flutter_rust_bridge_codegen --rust-input ./src/flutter_ffi.rs --dart-output ./flutter/lib/generated_bridge.dart --c-output ./flutter/ios/Runner/bridge_generated.h
+      - name: Build rustdesk lib
+        run: cargo build --features flutter,hwcodec --release --target aarch64-apple-ios --lib
+      - name: Build app
+        run: |
+          cd flutter
+          flutter build ios --release --no-codesign
+      - name: Package IPA
+        run: |
+          APP=flutter/build/ios/iphoneos/Runner.app
+          /usr/libexec/PlistBuddy -c "Print :MinimumOSVersion" $APP/Info.plist
+          /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" $APP/Info.plist
+          for b in $APP/Runner $APP/Frameworks/*.framework/*; do
+            [ -f "$b" ] && file "$b" | grep -q Mach-O && echo "$b: $(otool -l "$b" | grep -A4 -E 'LC_BUILD_VERSION|LC_VERSION_MIN_IPHONEOS' | grep -E 'minos|version ' | head -1)"
+          done
+          mkdir Payload && cp -R $APP Payload/
+          zip -qry rustdesk-ios12.ipa Payload
+          ls -lh rustdesk-ios12.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rustdesk-ios12
+          path: rustdesk-ios12.ipa
